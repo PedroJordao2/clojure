@@ -11,20 +11,20 @@
     {:status 200 :body {:msg "Usuário cadastrado"}})
 
   (POST "/food" req
-    (let [{:keys [barcode date qty]} (:body req)
-          cals  (* (svc/fetch-food-calories barcode) qty)
-          entry {:tipo     :ganho
-                 :descricao barcode
-                 :date     date
-                 :calorias cals}]
+    (let [{:keys [descricao date qty]} (:body req)
+          cals  (* (svc/fetch-food-calories descricao) qty)
+          entry {:tipo      :ganho
+                 :descricao descricao
+                 :date      date
+                 :calorias  cals}]
       (db/add-entry! entry)
       {:status 200 :body entry}))
 
   (POST "/activity" req
-    (let [{:keys [name date duration]} (:body req)
-          cals  (svc/fetch-activity-calories name duration)
+    (let [{:keys [descricao date duracao]} (:body req)
+          cals  (svc/fetch-activity-calories descricao duracao)
           entry {:tipo      :perda
-                 :descricao name
+                 :descricao descricao
                  :date      date
                  :calorias  cals}]
       (db/add-entry! entry)

@@ -1,6 +1,7 @@
 (ns calorie-calculator.services
   (:require [clj-http.client :as client]
-            [calorie-calculator.config :refer [load-config]]))
+            [calorie-calculator.config :refer [load-config]])
+  (:import (clojure.lang ExceptionInfo))) ; <-- IMPORTAÇÃO ADICIONADA AQUI
 
 ;; Carrega hosts e chaves do config.edn
 (let [{:keys [rapi-host rapi-key ninjas-host ninjas-key]} (load-config)]
@@ -20,20 +21,23 @@
         nil))))
 
 (defn fetch-food-calories
-  "Busca calorias de um alimento pelo nome (por ex. \"Jabłko\"),
-   retornando o valor em kcal (ou 0 em caso de erro)."
+  "Busca calorias de um alimento pelo nome e retorna a caloria (Integer)."
   [food-name]
   (if-let [resp (safe-get food-url
                           {:headers      rapi-headers
                            :query-params {:name food-name
-                                          :lang "pl"}
+                                          :lang "pt"}
                            :as           :json})]
-    ;; Ajuste a extração abaixo conforme o formato real de resposta
-    (get-in resp [:body :kcal] 
-            (do (println "⚠️  Formato inesperado, retornando 0.") 0))
+    (let [dishes      (get-in resp [:body :dishes])
+          first-dish  (first dishes)
+          caloric-str (get first-dish :caloric "0")
+          caloric-int (try (Integer/parseInt caloric-str)
+                           (catch Exception _ 0))]
+      caloric-int)
     (do
-      (println "⚠️  Falha ao obter calorias do alimento; retornando 0.")
+      (println "  Falha ao obter calorias; retornando 0.")
       0)))
+
 
 (defn fetch-activity-calories
   "Busca calorias queimadas por atividade (nome) e duração em minutos."
@@ -45,5 +49,5 @@
     (let [rate (get-in resp [:body 0 :calories_per_minute] 0)]
       (* rate duration))
     (do
-      (println "⚠️  Falha ao obter calorias da atividade; retornando 0.")
+      (println "  Falha ao obter calorias da atividade; retornando 0.")
       0)))
